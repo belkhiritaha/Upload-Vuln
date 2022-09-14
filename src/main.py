@@ -13,10 +13,6 @@ def allowed_file(filename):
 
 
 def insertWaterMark(filename):
-    if not allowed_file(filename):
-        print("File not allowed")
-        return {'status': 'failed', 'message': 'Improper filename'}, 400
-
     #try:
     # Open the meme image
     img = Image.open(filename).convert("RGBA")
@@ -43,6 +39,7 @@ def getMemes():
     memes = []
     for filename in os.listdir('memes'):
         if allowed_file(filename):
+            print(filename + "is allowed")
             memes.append(filename)
     return memes
 
@@ -72,7 +69,7 @@ def editHTML(memes : list):
 
 @app.route('/')
 def main():
-    insertWaterMark('uploads/download.jpeg')
+    insertWaterMark('uploads/hehe.png')
     memes = getMemes()
     editHTML(memes)
     return "h"
