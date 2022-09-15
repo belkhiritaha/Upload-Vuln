@@ -1,7 +1,8 @@
-from flask import Flask
+from flask import Flask, request
 from PIL import Image, ImageDraw, ImageFont
 from bs4 import BeautifulSoup
 import os
+import requests
 
 app = Flask(__name__, static_url_path='/static')
 
@@ -17,9 +18,15 @@ def insertWaterMark(filename):
     # Open the meme image
     img = Image.open(filename).convert("RGBA")
     # Open the watermark image
-    watermark = Image.open('static/assets/watermark.jpeg').convert("RGBA")
-    # Add the watermark to the image
-    img.paste(watermark, (0, 0), watermark)
+    watermark = Image.open('static/assets/4gagLogo.png').convert("RGBA")
+    # Get image size
+    imgWidth, imgHeight = img.size
+    # Resize watermark
+    watermark = watermark.resize((int(imgWidth/4), int(imgHeight/4)))
+    # Get watermark size
+    watermarkWidth, watermarkHeight = watermark.size
+    # Paste the watermark
+    img.paste(watermark, (imgWidth - watermarkWidth, imgHeight - watermarkHeight), watermark)
     # Save the image
     newFilename = filename.rsplit('/', 1)[1]
     newFilename = 'static/memes/ZZ' + newFilename
@@ -35,11 +42,21 @@ def insertWaterMark(filename):
     #     return {'status': 'failed', 'message': 'Something went wrong'}, 500
 
 
+def getUpload():
+    uploads = []
+    for filename in os.listdir('static/uploads/'):
+        if allowed_file(filename):
+            print(filename + " is allowed")
+            uploads.append(filename)
+    return uploads
+
+
+
 def getMemes():
     memes = []
     for filename in os.listdir('static/memes/'):
         if allowed_file(filename):
-            print(filename + "is allowed")
+            print(filename + " is allowed")
             memes.append(filename)
     return memes
 
@@ -52,7 +69,7 @@ def editHTML(memes : list):
     print("HTML parsed")
     for meme in memes:
         # Create a new div
-        newDiv = soup.new_tag("div")
+        newDiv = soup.new_tag("div", **{"class": "meme"})
         # Create a new img tag
         newImg = soup.new_tag("img")
         # Set the src of the img tag
@@ -71,9 +88,20 @@ def editHTML(memes : list):
 
 @app.route('/')
 def main():
-    insertWaterMark('static/uploads/hehe.png')
+    uploads = getUpload()
+    for upload in uploads:
+        insertWaterMark('static/uploads/' + upload)
+
     memes = getMemes()
     html = editHTML(memes)
     return html
 
 
+@app.route('/uploader', methods = ['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+        print("POST request")
+        f = request.files['fileToUpload']
+        print("File: ", f)
+        f.save('static/uploads/' + f.filename)
+        return 'file uploaded successfully'
